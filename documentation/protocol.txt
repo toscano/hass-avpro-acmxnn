@@ -1,0 +1,80 @@
+===============================================================================================================================
+=********************************************************Systems HELP*********************************************************=
+=-----------------------------------------------------------------------------------------------------------------------------=
+=                        System Address = 00           F/W Version : 1.72                                                     =
+=   Azz                           :  All Commands start by Prefix System Address zz, if [01-99]                               =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=   H                             : Help                                                                                      =
+=   STA                           : Show Global System Status                                                                 =
+=   SET RBT                       : Reboot Device                                                                             =
+=   SET RST                       : Reset to Factory Defaults                                                                 =
+=   SET ADDR xx                   : Set System Address to xx {xx=[00~99](00=Single)}                                          =
+=   SET LCD ON Tx                 : Set LCD Remain On Time{x=[0~3](0=Always ON,1=15,2=30,3=60Sec)}                            =
+=   SET KEY LOCK ON/OFF           : Set Key Lock On/Off                                                                       =
+=   GET ADDR                      : Get System Address                                                                        =
+=   GET STA                       : Get System System Status                                                                  =
+=   GET INx SIG STA               : Get Input x Signal Status{x=[0~4](0=ALL)}                                                 =
+=   GET LCD ON T                  : Get LCD Remain On Time                                                                    =
+=   GET KEY LOCK                  : Get Key Lock Status                                                                       =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=Output Setup Commands:                                                                                                       =
+=   SET OUTx VS INy               : Set Output x To Input y{x=[0~4](0=ALL), y=[1~4]}                                          =
+=   SET OUTx VIDEOy               : Set Output VIDEO Mode                                                                     =
+=                                   {x=[0~4](0=ALL), y=[0~4](0=AUTO,1=BYPASS,2=4K->2K,3=2K->4K,4=HDBT C Mode)}                =
+=   SET OUTx IMAGE ENH y          : Set Output Image Enhancement{x=[0~4](0=ALL), y=[0~3](0=OFF,1=WEAK,2=MEDIUM,3=STRONG)}     =
+=   SET OUTx EXA EN/DIS           : Set Ex-Audio Output Enable/Disable{x=[0~4](0=ALL)}                                        =
+=   SET OUTx EXADL PHy            : Set Ex-Audio Delay{x=[0~4](0=ALL), y=[0~7](0=Bypass,1~7=90,180,270,360,450,540,630MS)}    =
+=   SET EXAMX MODEx               : Set Ex-Audio Matrix Mode{x=[0~2](0=Bind To Output,1=Bind To Input,2=Matrix}               =
+=   SET OUTx AS INy               : Set Ex-Audio Output x To Input y{x=[0~4](0=ALL), y=[1~4]}                                 =
+=   SET OUTx SGM EN/DIS           : Set  Output Signal Generator Enable/Disable{x=[0~4](0=ALL)}                               =
+=   SET OUTx STREAM ON/OFF        : Set Output x Stream ON/OFF{x=[0~4](0=ALL)}                                                =
+=   GET OUTx VS                   : Get Output x Video Route{x=[0~4](0=ALL)}                                                  =
+=   GET OUTx VIDEO                : Get Output x Video Mode{x=[0~4](0=ALL)}                                                   =
+=   GET OUTx IMAGE ENH            : Get Output Image Enhancement Mode{x=[0~4](0=ALL)}                                         =
+=   GET OUTx EDID DATA            : Get Output x EDID DATA{x=[1~4]}                                                           =
+=   GET OUTx EXA                  : Get Ex-Audio Output Enable/Disable Status{x=[0~4](0=ALL)}                                 =
+=   GET OUTx EXADL PH             : Get Ex-Audio Output Delay Status{x=[0~4](0=ALL)}                                          =
+=   GET EXAMX MODE                : Get Ex-Audio Matrix Mode                                                                  =
+=   GET OUTx AS IN                : Get  Output x  Ex-Audio Route{x=[0~4](0=ALL)}                                             =
+=   GET OUTx SGM                  : Get  Output Signal Generator Enable/Disable Status{x=[0~4](0=ALL)}                        =
+=   GET OUTx STREAM               : Get Output x Stream ON/OFF Status{x=[0~4](0=ALL)}                                         =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=Input Setup Commands:                                                                                                        =
+=   SET INx EDID y                : Set Input x EDID{x=[0~4](0=ALL), y=[0~32]}                                                =
+=                                   0:1080P_2CH          1:1080P_6CH          2:1080P_8CH          3:1080P_3D_2CH             =
+=                                   4:1080P_3D_6CH       5:1080P_3D_8CH       6:4K30HZ_3D_2CH      7:4K30HZ_3D_6CH            =
+=                                   8:4K30HZ_3D_8CH      9:4K60HzY420_3D_2CH  10:4K60HzY420_3D_6CH 11:4K60HzY420_3D_8CH       =
+=                                   12:4K60HZ_3D_2CH     13:4K60HZ_3D_6CH     14:4K60HZ_3D_8CH     15:1080P_2CH_HDR           =
+=                                   16:1080P_6CH_HDR     17:1080P_8CH_HDR     18:1080P_3D_2CH_HDR  19:1080P_3D_6CH_HDR        =
+=                                   20:1080P_3D_8CH_HDR  21:4K30HZ_3D_2CH_HDR 22:4K30HZ_3D_6CH_HDR 23:4K30HZ_3D_8CH_HDR       =
+=                                   24:4K60HzY420_3D_2CH_HDR      25:4K60HzY420_3D_6CH_HDR      26:4K60HzY420_3D_8CH_HDR      =
+=                                   27:4K60HZ_3D_2CH_HDR          28:4K60HZ_3D_6CH_HDR          29:4K60HZ_3D_8CH_HDR          =
+=                                   30:USER1_EDID                 31:USER2_EDID                 32:USER3_EDID                 =
+=   SET INx EDID CY OUTy          : Copy Output y EDID To Input x(USER1 BUF){x=[0~4](0=ALL), y=[1~4]}                         =
+=   SET INx EDID Uy DATAz         : Write EDID To  User y Buffer  of Input x{x=[0~4](0=ALL), y=[1~3],z=[EDID Data]}           =
+=   SET INx TMDS ON/OFF           : Set Input Port Power On/Off{x=[0~4](0=ALL)}                                               =
+=   GET INx EDID                  : Get Input x EDID  Index{x=[0~4](0=ALL)}                                                   =
+=   GET INx EDID y DATA           : Get Input x EDID y Data{x=[1~4],y=[0~32]}                                                 =
+=   GET INx TMDS                  : Get Input Port Power On/Off State{x=[0~4](0=ALL)}                                         =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=Network Setup Command: ( xxx=[000-255], zzzz=[0001~9999]                                                                     =
+=   SET RIP xxx.xxx.xxx.xxx       : Set Route IP Address to xxx.xxx.xxx.xxx                                                   =
+=   SET HIP xxx.xxx.xxx.xxx       : Set Host IP Address to xxx.xxx.xxx.xxx                                                    =
+=   SET NMK xxx.xxx.xxx.xxx       : Set Net Mask to xxx.xxx.xxx.xxx                                                           =
+=   SET TIP zzzz                  : Set TCP/IP Port to zzzz                                                                   =
+=   SET DHCP y                    : Set DHCP {y=[0~1](0=Dis,1=Enable)}                                                        =
+=   GET RIP                       : Get Route IP Address                                                                      =
+=   GET HIP                       : Get Host IP Address                                                                       =
+=   GET NMK                       : Get Net Mask                                                                              =
+=   GET TIP                       : Get TCP/IP Port                                                                           =
+=   GET DHCP                      : Get DHCP Status                                                                           =
+=   GET MAC                       : Get MAC  Address                                                                          =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=IR Code Setup Command:                                                                                                       =
+=   SET IR SYS xx.yy              : Set IR Custom Code{xx=[00-FFH],yy=[00-FFH]}                                               =
+=   SET IR OUTx INy CODE zz       : Set IR Data Code{x=[1~4],y=[1~4],zz=[00-FFH]}                                             =
+=   GET IR SYS                    : Get IR Custom Code                                                                        =
+=   GET IR OUTx INy CODE          : Get IR Data Code                                                                          =
+=-----------------------------------------------------------------------------------------------------------------------------=
+=*****************************************************************************************************************************=
+===============================================================================================================================
