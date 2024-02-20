@@ -15,7 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 
 from . import controller
-from .const import DOMAIN, OUTPUT_TYPE_AUDIO, OUTPUT_TYPE_VIDEO
+from .const import DOMAIN, OUTPUT_TYPE_AUDIO, OUTPUT_TYPE_VIDEO, WS_STATE_CONNECTED, WS_STATE_DISCONNECTED
 
 LOGGER = logging.getLogger(__package__)
 
@@ -36,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         # we skip video outputs without a name or those whose name starts with a dot (.)
         if name.strip() and name[0] != '.':
             LOGGER.debug(f"Found video output[{index}]={name}")
-            new_devices.append( MatrixOutput(hass, entry, client, name, index, OUTPUT_TYPE_VIDEO) )
+            new_devices.append( MatrixOutput(hass, entry, client, name, index+1, OUTPUT_TYPE_VIDEO) )
 
     if new_devices:
         async_add_entities(new_devices)
@@ -55,8 +55,28 @@ class MatrixOutput(MediaPlayerEntity):
         self._name = name
         self._output_type = output_type
 
-        self._attr_unique_id = f"{entry.unique_id}_{output_type}_{index:02d}"
+        self._sourceIndex = -1
+        self._sourceName = ""
 
+        self._attr_unique_id = f"{entry.unique_id}_{output_type}_{index:02d}"
+        controller.add_subscriber(self.data_callback)
+
+    def data_callback(self, data: str):
+
+        if data == WS_STATE_CONNECTED or data == WS_STATE_DISCONNECTED:
+            LOGGER.debug(f"{self._name} connection state changed to {data}.")
+            self.schedule_update_ha_state()
+            return
+
+        splits = data.split(' ')
+        if splits and len(splits)==3 and splits[0]==f"OUT{self._index}" and splits[1]==f"{self._output_type}S":
+
+            sourceIndex = int(splits[2][2:])-1 # We subtract one since the device reports by one based index
+            if (self._sourceIndex != sourceIndex):
+                self._sourceIndex = sourceIndex
+                self._sourceName = self._controller.video_inputs[sourceIndex]
+                LOGGER.debug(f"{self._name}<--{self._sourceName}")
+                self.schedule_update_ha_state()
 
     @property
     def name(self):
@@ -65,7 +85,10 @@ class MatrixOutput(MediaPlayerEntity):
 
     @property
     def icon(self):
-        return "mdi:video-switch" # "video-switch-outline"
+        if self._controller.is_online:
+            return "mdi:video-switch"
+        else:
+            return "mdi:video-switch-outline"
 
     @property
     def should_poll(self) -> bool:
@@ -77,12 +100,15 @@ class MatrixOutput(MediaPlayerEntity):
     @property
     def state(self) -> MediaPlayerState | None:
         """Return the state of the device."""
-        return MediaPlayerState.ON
+        if self._controller.is_online:
+            return MediaPlayerState.ON
+        else:
+            return MediaPlayerState.OFF
 
     @property
     def available(self) -> bool:
         """Return if the media player is available."""
-        return True
+        return self._controller.is_online
 
     @property
     def supported_features(self) -> MediaPlayerEntityFeature:
@@ -92,10 +118,14 @@ class MatrixOutput(MediaPlayerEntity):
     @property
     def source(self) -> str | None:
         """Return the current input source."""
-        return "Roku"
+        return self._sourceName
 
     @property
     def source_list(self):
         # List of available input sources.
+        return self._controller.clean_inputs
 
-        return ["Roku", "Fire TV", "Laser Disc"]
+    async def async_select_source(self, source):
+        # Select input source.
+        index = self._controller.video_inputs.index(source)+1
+        await self._controller.async_send(f"SET OUT{self._index} {self._output_type}S IN{index}")

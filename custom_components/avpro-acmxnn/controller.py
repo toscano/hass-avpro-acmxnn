@@ -1,6 +1,6 @@
 """Support for AVPro AV-MX-nn matrix switches."""
 from __future__ import annotations
-from typing import List
+from typing import List, Callable
 
 import logging
 from typing import Any
@@ -24,6 +24,7 @@ class Controller:
 
     def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
         """Init."""
+        self._ws_client = None
         self._host = host
         self._session = session
         self._wsState = WS_STATE_STOPPED
@@ -37,6 +38,8 @@ class Controller:
         self._inputs = []
         self._vOutputs = []
         self._aOutputs = []
+        self._subscribers = []
+        self._pending_requests = []
 
     async def async_check_connection(self, connect: bool = False) -> bool:
         LOGGER.debug(f"Testing connection to {self._host}.")
@@ -58,8 +61,12 @@ class Controller:
             portalias = json.loads(data['info']['portalias'])
 
             self._inputs = []
+            self._cleanInputs = []
+
             for item in portalias['inputsID']:
                 self._inputs.append(item['id'])
+                if item['id'].strip() and item['id'][0] != '.':
+                    self._cleanInputs.append(item['id'])
 
             self._vOutputs = []
             for item in portalias['outputsVideoID']:
@@ -89,6 +96,7 @@ class Controller:
         """Open a persistent websocket connection and act on events."""
         try:
             LOGGER.debug("Connecting to websocket")
+
             self._wsFailedAttempts = 0
             self._wsState = WS_STATE_STARTING
 
@@ -118,6 +126,9 @@ class Controller:
                 LOGGER.info(f"Websocket connect abandoned: Client is closed. We must be shutting down.")
                 return
 
+            for sub in self._subscribers:
+                sub(WS_STATE_DISCONNECTED)
+
             url = f"ws://{self._host}/ws/uart"
             LOGGER.debug(f"Connecting to {url}")
 
@@ -128,13 +139,24 @@ class Controller:
 
                 LOGGER.info(f"Connected to {url}")
 
+                for sub in self._subscribers:
+                    sub(WS_STATE_CONNECTED)
+
+                if len(self._pending_requests) > 0:
+                    requests = self._pending_requests
+                    self._pending_requests = []
+                    for req in requests:
+                        await ws_client.send_str(req)
+
                 async for message in ws_client:
                     if self._wsState == WS_STATE_STOPPED:
                         break
 
                     if message.type == aiohttp.WSMsgType.TEXT:
                         data = message.data.strip()
-                        LOGGER.debug(f"WS TEXT: {data}")
+                        #LOGGER.debug(f"<--{data}")
+                        for sub in self._subscribers:
+                            sub(data)
 
                     elif message.type == aiohttp.WSMsgType.CLOSED:
                         LOGGER.warning("AIOHTTP websocket connection closed")
@@ -176,10 +198,24 @@ class Controller:
     async def async_get_status(self):
         if self._ws_client is not None:
             await self._ws_client.send_str("\r\nGET STA\r\n")
+        else:
+            self._pending_requests.append("\r\nGET STA\r\n")
 
     async def async_poll_outputs(self):
         if self._ws_client is not None:
             await self._ws_client.send_str("\r\nGET OUT0\r\n")
+        else:
+            self._pending_requests.append("\r\nGET OUT0\r\n")
+
+    async def async_send(self, data: str):
+        LOGGER.debug(f"-->{data}")
+        if self._ws_client is not None:
+            await self._ws_client.send_str(f"\r\n{data}\r\n")
+        else:
+            self._pending_requests.append(f"\r\n{data}\r\n")
+
+    def add_subscriber(self, callback: Callable[[str], None] ):
+        self._subscribers.append(callback)
 
     @property
     def mac(self) -> str:
@@ -204,3 +240,11 @@ class Controller:
     @property
     def video_inputs(self) -> List[str]:
         return self._inputs
+
+    @property
+    def clean_inputs(self) -> List[str]:
+        return self._cleanInputs
+
+    @property
+    def is_online(self) -> bool:
+        return self._wsState == WS_STATE_CONNECTED
