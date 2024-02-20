@@ -1,5 +1,6 @@
 """Support for AVPro AV-MX-nn matrix switches."""
 from __future__ import annotations
+from typing import List
 
 import logging
 from typing import Any
@@ -97,6 +98,8 @@ class Controller:
         except asyncio.CancelledError as error:
             self._wsState = WS_STATE_STOPPED
 
+        self._ws_client = None
+
     async def async_ws_close(self):
         """Close the listening websocket."""
         if self._wsTask is not None:
@@ -104,13 +107,14 @@ class Controller:
             self._wsState = WS_STATE_STOPPED
             self._wsTask.cancel()
             self._wsTask = None
-
+            self._ws_client = None
 
     async def async_ws_run(self):
 
         try:
             if self._session.closed:
                 self._wsState = WS_STATE_STOPPED
+                self._ws_client = None
                 LOGGER.info(f"Websocket connect abandoned: Client is closed. We must be shutting down.")
                 return
 
@@ -120,6 +124,7 @@ class Controller:
             async with self._session.ws_connect(url, heartbeat=15, ssl=False) as ws_client:
                 self._wsState = WS_STATE_CONNECTED
                 self._wsfailed_attempts = 0
+                self._ws_client = ws_client
 
                 LOGGER.info(f"Connected to {url}")
 
@@ -146,24 +151,35 @@ class Controller:
                 LOGGER.error(f"Unexpected response received: {type(error)=}.")
 
             self._wsState = WS_STATE_STOPPED
+            self._ws_client = None
 
         except (aiohttp.ClientConnectionError, asyncio.TimeoutError) as error:
 
             if self._wsfailed_attempts >= WS_MAX_FAILED_ATTEMPTS:
                 self._wsState = WS_STATE_STOPPED
+                self._ws_client = None
                 LOGGER.error("Too many errors.")
             elif self._wsState != WS_STATE_STOPPED:
                 retry_delay = min(2 ** (self._wsfailed_attempts - 1) * 30, 300)
                 self._wsfailed_attempts += 1
                 LOGGER.error(f"Websocket connection failed, retrying in {retry_delay}s: {type(error)=}.")
                 self._wsState = WS_STATE_DISCONNECTED
+                self._ws_client = None
                 await asyncio.sleep(retry_delay)
         except Exception as error:  # pylint: disable=broad-except
             if self._wsState != WS_STATE_STOPPED:
                 LOGGER.exception(f"Unexpected exception occurred: {type(error)=}.")
                 self._wsState = WS_STATE_STOPPED
+                self._ws_client = None
                 await asyncio.sleep(5)
 
+    async def async_get_status(self):
+        if self._ws_client is not None:
+            await self._ws_client.send_str("\r\nGET STA\r\n")
+
+    async def async_poll_outputs(self):
+        if self._ws_client is not None:
+            await self._ws_client.send_str("\r\nGET OUT0\r\n")
 
     @property
     def mac(self) -> str:
@@ -180,3 +196,11 @@ class Controller:
     @property
     def serial(self) -> str:
         return self._serial
+
+    @property
+    def video_outputs(self) -> List[str]:
+        return self._vOutputs
+
+    @property
+    def video_inputs(self) -> List[str]:
+        return self._inputs
