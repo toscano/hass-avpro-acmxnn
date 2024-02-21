@@ -34,6 +34,7 @@ class Controller:
         self._mac = ""
         self._serial = ""
         self._model = ""
+        self._version = ""
         self._port = 23
         self._inputs = []
         self._vOutputs = []
@@ -54,6 +55,7 @@ class Controller:
             self._name = data['info']['name']
             self._mac = data['info']['mac']
             self._model = data['info']['modelname']
+            self._version = data['info']['softver']
             self._port = data['info']['rs232telnetport']
             self._serial = data['info']['serialnumber']
             LOGGER.info(f"Found matrix switch named '{self._name}' of model '{self._model}' with mac address '{self._mac}' and serial number '{self._serial}' on {self._host}:{self._port}.")
@@ -228,6 +230,10 @@ class Controller:
     @property
     def model(self) -> str:
         return self._model
+
+    @property
+    def version(self) -> str:
+        return self._version
 
     @property
     def serial(self) -> str:

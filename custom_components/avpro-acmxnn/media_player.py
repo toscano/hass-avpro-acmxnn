@@ -11,11 +11,12 @@ from homeassistant.components.media_player import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 
 from . import controller
-from .const import DOMAIN, OUTPUT_TYPE_AUDIO, OUTPUT_TYPE_VIDEO, WS_STATE_CONNECTED, WS_STATE_DISCONNECTED
+from .const import DOMAIN, MANUFACTURER, OUTPUT_TYPE_AUDIO, OUTPUT_TYPE_VIDEO, WS_STATE_CONNECTED, WS_STATE_DISCONNECTED
 
 LOGGER = logging.getLogger(__package__)
 
@@ -66,6 +67,14 @@ class MatrixOutput(MediaPlayerEntity):
         self._sourceName = ""
 
         self._attr_unique_id = f"{entry.unique_id}_{output_type}_{index:02d}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.unique_id)},
+            manufacturer=MANUFACTURER,
+            model=self._controller.model,
+            name=entry.data[CONF_NAME],
+            sw_version=self._controller.version,
+        )
+
         controller.add_subscriber(self.data_callback)
 
     def data_callback(self, data: str):
