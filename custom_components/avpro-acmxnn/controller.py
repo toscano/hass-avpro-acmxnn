@@ -36,6 +36,7 @@ class Controller:
         self._model = ""
         self._version = ""
         self._port = 23
+        self._matrixAudio = False
         self._inputs = []
         self._vOutputs = []
         self._aOutputs = []
@@ -84,7 +85,6 @@ class Controller:
 
             if connect:
                 self._wsTask = asyncio.create_task(self.async_ws_connect())
-
 
             LOGGER.debug("async_check_connections succeeded.")
 
@@ -157,6 +157,14 @@ class Controller:
                     if message.type == aiohttp.WSMsgType.TEXT:
                         data = message.data.strip()
                         #LOGGER.debug(f"<--{data}")
+
+                        if data=="EXAMX MODE2":
+                            LOGGER.info("MatrixAudio = True")
+                            self._matrixAudio = True
+                        elif data[0:5]=="EXAMX":
+                            LOGGER.info("MatrixAudio = False")
+                            self._matrixAudio = False
+
                         for sub in self._subscribers:
                             sub(data)
 
@@ -240,6 +248,10 @@ class Controller:
         return self._serial
 
     @property
+    def audio_outputs(self) -> List[str]:
+        return self._aOutputs
+
+    @property
     def video_outputs(self) -> List[str]:
         return self._vOutputs
 
@@ -254,3 +266,7 @@ class Controller:
     @property
     def is_online(self) -> bool:
         return self._wsState == WS_STATE_CONNECTED
+
+    @property
+    def matrix_audio(self) -> bool:
+        return self._matrixAudio

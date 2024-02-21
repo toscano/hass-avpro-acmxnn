@@ -6,6 +6,7 @@ from homeassistant.components.media_player import (
     MediaPlayerEntity,
     MediaPlayerEntityFeature,
     MediaPlayerState,
+    ATTR_TO_PROPERTY
 )
 
 from homeassistant.config_entries import ConfigEntry
@@ -20,6 +21,8 @@ from .const import DOMAIN, MANUFACTURER, OUTPUT_TYPE_AUDIO, OUTPUT_TYPE_VIDEO, W
 
 LOGGER = logging.getLogger(__package__)
 
+VIDEO_MODES = ["AUTO", "BYPASS", "4K->2K", "2K->4K", "HDBT C Mode"]
+AUDIO_DELAYS = ["0ms","90ms","180ms","270ms","360ms","450ms","540ms","630ms"]
 
 # See cover.py for more details.
 # Note how both entities for each roller sensor (battry and illuminance) are added at
@@ -39,6 +42,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             LOGGER.debug(f"Found video output[{index}]={name}")
             new_devices.append( MatrixOutput(hass, entry, client, name, index+1, OUTPUT_TYPE_VIDEO) )
 
+    for index, name in enumerate(client.audio_outputs):
+        # we skip video outputs without a name or those whose name starts with a dot (.)
+        if name.strip() and name[0] != '.':
+            LOGGER.debug(f"Found audio output[{index}]={name}")
+            new_devices.append( MatrixOutput(hass, entry, client, name, index+1, OUTPUT_TYPE_AUDIO) )
+
     if new_devices:
         async_add_entities(new_devices)
 
@@ -53,6 +62,7 @@ class MatrixOutput(MediaPlayerEntity):
         self._hass = hass
         self._controller = controller
         self._index = index
+        self._extra_attributes = {}
 
         if (output_type== OUTPUT_TYPE_VIDEO):
             self._name = f"{name} HDMI"
@@ -81,18 +91,61 @@ class MatrixOutput(MediaPlayerEntity):
 
         if data == WS_STATE_CONNECTED or data == WS_STATE_DISCONNECTED:
             LOGGER.debug(f"{self._name} connection state changed to {data}.")
-            self.schedule_update_ha_state()
+            self._extra_attributes = {}
+            self.update_ha()
             return
 
         splits = data.split(' ')
-        if splits and len(splits)==3 and splits[0]==f"OUT{self._index}" and splits[1]==f"{self._output_type}S":
+        if splits and len(splits)==2 and splits[0]=="EXAMX":
+            self.update_ha()
+            return
 
-            sourceIndex = int(splits[2][2:])-1 # We subtract one since the device reports by one based index
-            if (self._sourceIndex != sourceIndex):
-                self._sourceIndex = sourceIndex
-                self._sourceName = self._controller.video_inputs[sourceIndex]
-                LOGGER.debug(f"{self._name}<--{self._sourceName}")
-                self.schedule_update_ha_state()
+        if splits and len(splits)>0 and splits[0]==f"OUT{self._index}":
+
+            # OUTx [V|A]S INy
+            if len(splits)==3  and splits[1]==f"{self._output_type}S":
+                sourceIndex = int(splits[2][2:])-1 # We subtract one since the device reports by one based index
+                if (self._sourceIndex != sourceIndex):
+                    self._sourceIndex = sourceIndex
+                    self._sourceName = self._controller.video_inputs[sourceIndex]
+                    LOGGER.debug(f"{self._name}<--{self._sourceName}")
+                    self.update_ha()
+
+            # OUTx VIDEOy
+            elif len(splits)==2 and splits[1][0:5]=="VIDEO":
+                vmode = int(splits[1][5:])
+                if (vmode>=0 and vmode<=4):
+                    self._extra_attributes["video_mode"]=VIDEO_MODES[vmode]
+                    LOGGER.debug(f"{self._name}<--{VIDEO_MODES[vmode]}")
+                    self.update_ha()
+
+            # OUTx EXADL PHy == OUT1 EXADL PH0
+            elif len(splits)==3 and splits[1]=="EXADL":
+                delayIndex = int(splits[2][2:])
+                if (delayIndex>=0 and delayIndex<=7):
+                    self._extra_attributes["audio_delay"]=AUDIO_DELAYS[delayIndex]
+                    LOGGER.debug(f"{self._name}<--{AUDIO_DELAYS[delayIndex]}")
+                    self.update_ha()
+
+            # OUTx STREAM ON/OFF
+
+            ## OUTx IMAGE ENH y
+            ## OUTx EXA EN/DIS
+            ## OUTx SGM EN/DIS
+
+            #OUT1 EXA EN
+            #OUT1 EXA LVL10
+            #OUT1 EXA RVL10
+            #OUT1 EXAUD LEV100
+            #OUT1 EXEQ MODE0
+            #OUT1 SGMT 0
+
+
+    def update_ha(self):
+        try:
+            self.schedule_update_ha_state()
+        except Exception as error:  # pylint: disable=broad-except
+            LOGGER.debug("State update failed.")
 
     @property
     def name(self):
@@ -124,6 +177,9 @@ class MatrixOutput(MediaPlayerEntity):
     @property
     def available(self) -> bool:
         """Return if the media player is available."""
+        if self._output_type == OUTPUT_TYPE_AUDIO and self._controller.matrix_audio == False:
+            return False
+
         return self._controller.is_online
 
     @property
@@ -145,3 +201,9 @@ class MatrixOutput(MediaPlayerEntity):
         # Select input source.
         index = self._controller.video_inputs.index(source)+1
         await self._controller.async_send(f"SET OUT{self._index} {self._output_type}S IN{index}")
+
+    @property
+    def extra_state_attributes(self):
+        """Return extra state attributes."""
+        # Useful for making sensors
+        return self._extra_attributes
