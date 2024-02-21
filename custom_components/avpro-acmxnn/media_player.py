@@ -63,6 +63,7 @@ class MatrixOutput(MediaPlayerEntity):
         self._controller = controller
         self._index = index
         self._extra_attributes = {}
+        self._isOn = True
 
         if (output_type== OUTPUT_TYPE_VIDEO):
             self._name = f"{name} HDMI"
@@ -128,6 +129,10 @@ class MatrixOutput(MediaPlayerEntity):
                     self.update_ha()
 
             # OUTx STREAM ON/OFF
+            elif len(splits)==3 and splits[1]=="STREAM":
+                self._isOn = (splits[2]=="ON")
+                LOGGER.debug(f"{self._name}<--{splits[2]}")
+                self.update_ha()
 
             ## OUTx IMAGE ENH y
             ## OUTx EXA EN/DIS
@@ -169,7 +174,7 @@ class MatrixOutput(MediaPlayerEntity):
     @property
     def state(self) -> MediaPlayerState | None:
         """Return the state of the device."""
-        if self._controller.is_online:
+        if self._isOn:
             return MediaPlayerState.ON
         else:
             return MediaPlayerState.OFF
@@ -185,7 +190,7 @@ class MatrixOutput(MediaPlayerEntity):
     @property
     def supported_features(self) -> MediaPlayerEntityFeature:
         """Flag media player features that are supported."""
-        return MediaPlayerEntityFeature.SELECT_SOURCE
+        return MediaPlayerEntityFeature.SELECT_SOURCE | MediaPlayerEntityFeature.TURN_ON | MediaPlayerEntityFeature.TURN_OFF
 
     @property
     def source(self) -> str | None:
@@ -201,6 +206,13 @@ class MatrixOutput(MediaPlayerEntity):
         # Select input source.
         index = self._controller.video_inputs.index(source)+1
         await self._controller.async_send(f"SET OUT{self._index} {self._output_type}S IN{index}")
+
+    async def async_turn_on(self):
+        # Turn the media player on.
+        await self._controller.async_send(f"SET OUT{self._index} STREAM ON")
+
+    async def async_turn_off(self):
+        await self._controller.async_send(f"SET OUT{self._index} STREAM OFF")
 
     @property
     def extra_state_attributes(self):
