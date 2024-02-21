@@ -52,7 +52,14 @@ class MatrixOutput(MediaPlayerEntity):
         self._hass = hass
         self._controller = controller
         self._index = index
-        self._name = name
+
+        if (output_type== OUTPUT_TYPE_VIDEO):
+            self._name = f"{name} HDMI"
+        elif (output_type== OUTPUT_TYPE_AUDIO):
+            self._name = f"{name} audio"
+        else:
+            self._name = name
+
         self._output_type = output_type
 
         self._sourceIndex = -1
