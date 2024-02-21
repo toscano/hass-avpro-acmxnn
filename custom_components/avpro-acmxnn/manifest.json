@@ -1,6 +1,6 @@
 {
     "domain": "avpro-acmxnn",
-    "name": "AVPro AC-MX-nn Matrix switch family",
+    "name": "AC-MX Matrix switch",
     "codeowners": ["@toscano"],
     "config_flow": true,
     "dependencies": [],
