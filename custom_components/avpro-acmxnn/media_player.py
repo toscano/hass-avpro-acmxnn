@@ -110,6 +110,7 @@ class MatrixOutput(MediaPlayerEntity):
                     self._sourceIndex = sourceIndex
                     self._sourceName = self._controller.video_inputs[sourceIndex]
                     LOGGER.debug(f"{self._name}<--{self._sourceName}")
+                    self._attr_app_name = self._sourceName
                     self.update_ha()
 
             # OUTx VIDEOy
