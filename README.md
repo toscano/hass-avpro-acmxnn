@@ -7,5 +7,118 @@ A [Home Assistant](https://www.home-assistant.io/) custom component for interact
 - [AX-MX-88](https://avproedge.com/products/ac-mx-88)
 - [AX-MX-1616](https://avproedge.com/products/ac-mx-1616)
 
-## In development as of Feb. 18, 2024
-I'm working on it and should have things posted here within a week or so.
+## Features
+- Web UI configuration
+- One `media_player` entity for each configured device.
+- Asynchronous updates from Matrix to Home Assistant, no polling.
+- Support for the Home Assistant `media_player.select_source` service for switching inputs.
+- Support for the Home Assistant `media_player.turn_on`, `media_player.turn_off`, and `media_player.toggle` services to enable or disable a given output.
+
+![Screenshot of the custom component's attributes.](./documentation/images/device-in-ha.png)
+
+## Before Installation
+This custom component will create a Home Assistant `media_player` entity for each of your matrix outputs. Each of those `media_player` entities will have the abiility to select any of your matrix's input sources for it's output. Here are some tips to save you some time and effort.
+ - Configure and test your Matrix accorting to the manufacturers directions first.
+ - This component doesn't currently support a matrix with a password protected web configuration. Open an [issue](https://github.com/toscano/hass-avpro-acmxnn/issues) and I'll look into it. Or better yet submit a [pull request](https://github.com/toscano/hass-avpro-acmxnn/pulls) with the changes.
+ - You may not be using all of your matrix's inputs or outputs. This component will skip and input or output with an empty name (i.e. `""`) or a name that starts with a dot (i.e. `.OUT 4` or `.IN 1`).
+
+## Manual Installation
+
+Copy the `custom_components/avpro-acmxnn` directory to your `custom_components` folder and restart Home Assistant.
+
+Search for the `AC-MX Matrix switch` integration in the `Settings \ Integrations \ + Add Integration` Home Assistant UI. Provide the IP address of your matrix switch when prompted.
+
+If you use this custom component please give it a Star :star:
+
+## How I use this...
+
+My matrix is set up with four inputs:
+ - AppleTV
+ - NVidia Shield
+ - Panasonic Blu-ray player
+ - HTPC (That I use for short shows prior showing guests movies. I call these PreRolls).
+
+And three outputs:
+ - A MadVR Envy Extreme video processor that feeds my Sony Laser Projector
+ - An Anthem AVM 90 for my 9.4.6 audio in the main theater
+ - A 65" Sony OLED for display in the lobby
+
+ The MadVR Envy is a very powerful video processor and has separate settings for each of the separate input devices. One of the ways I audimate this is via this script that ensures that the Envy is applying the correct input device profile whenever there's a change.
+
+ I'm sure that you can find a good use yourself.
+
+```yaml
+alias: "Playhouse: Matrix Madvr source changes"
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - media_player.madvr_hdmi
+    attribute: source
+    to: AppleTV
+    id: madvr_to_appleTv
+  - platform: state
+    entity_id:
+      - media_player.madvr_hdmi
+    attribute: source
+    to: Shield
+    id: madvr_to_Shield
+  - platform: state
+    entity_id:
+      - media_player.madvr_hdmi
+    attribute: source
+    to: Blu-ray
+    id: madvr_to_BluRay
+  - platform: state
+    entity_id:
+      - media_player.madvr_hdmi
+    attribute: source
+    to: PreRoll
+    id: madvr_to_PreRoll
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - madvr_to_appleTv
+        sequence:
+          - service: remote.send_command
+            target:
+              entity_id: remote.envy
+            data:
+              command: ActivateProfile source 1
+      - conditions:
+          - condition: trigger
+            id:
+              - madvr_to_Shield
+        sequence:
+          - service: remote.send_command
+            target:
+              entity_id: remote.envy
+            data:
+              command: ActivateProfile source 2
+      - conditions:
+          - condition: trigger
+            id:
+              - madvr_to_BluRay
+        sequence:
+          - service: remote.send_command
+            target:
+              entity_id: remote.envy
+            data:
+              command: ActivateProfile source 3
+      - conditions:
+          - condition: trigger
+            id:
+              - madvr_to_PreRoll
+        sequence:
+          - service: remote.send_command
+            target:
+              entity_id: remote.envy
+            data:
+              command: ActivateProfile source 4
+mode: queued
+max: 10
+
+```
