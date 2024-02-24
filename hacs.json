@@ -1,0 +1,8 @@
+{
+    "name": "AVPro AC-MX Matrix switch",
+    "hacs": "1.6.0",
+    "domains": [
+        "media_player"
+    ],
+    "homeassistant": "2023.12.0"
+}
