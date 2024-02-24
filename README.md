@@ -17,8 +17,8 @@ A [Home Assistant](https://www.home-assistant.io/) custom component for interact
 ![Screenshot of the custom component's attributes.](./documentation/images/device-in-ha.png)
 
 ## Before Installation
-This custom component will create a Home Assistant `media_player` entity for each of your matrix outputs. Each of those `media_player` entities will have the abiility to select any of your matrix's input sources for it's output. Here are some tips to save you some time and effort.
- - Configure and test your Matrix accorting to the manufacturers directions first.
+This custom component will create a Home Assistant `media_player` entity for each of your matrix outputs. Each of those `media_player` entities will have the ability to select any of your matrix's input sources for it's output. Here are some tips to save you some time and effort.
+ - Configure and test your Matrix according to the manufacturers directions first.
  - This component doesn't currently support a matrix with a password protected web configuration. Open an [issue](https://github.com/toscano/hass-avpro-acmxnn/issues) and I'll look into it. Or better yet submit a [pull request](https://github.com/toscano/hass-avpro-acmxnn/pulls) with the changes.
  - You may not be using all of your matrix's inputs or outputs. This component will skip and input or output with an empty name (i.e. `""`) or a name that starts with a dot (i.e. `.OUT 4` or `.IN 1`).
 
@@ -43,7 +43,7 @@ And three outputs:
  - An Anthem AVM 90 for my 9.4.6 audio in the main theater
  - A 65" Sony OLED for display in the lobby
 
- The MadVR Envy is a very powerful video processor and has separate settings for each of the separate input devices. One of the ways I audimate this is via this script that ensures that the Envy is applying the correct input device profile whenever there's a change.
+ The MadVR Envy is a very powerful video processor and has separate settings for each of the separate input devices. One of the ways I automate this is via this script that ensures that the Envy is applying the correct input device profile whenever there's a change.
 
  I'm sure that you can find a good use yourself.
 
