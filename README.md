@@ -32,6 +32,7 @@ This custom component will create a Home Assistant `media_player` entity for eac
 If you don't or can't use HACS then:
  - Copy the `custom_components/avpro-acmxnn` directory to your `custom_components` folder.
  - Restart Home Assistant.
+ - Open your Home Assistant instance to your [integrations page.](https://my.home-assistant.io/redirect/integrations/)
  - Search for the `AC-MX Matrix switch` integration in the `Settings \ Integrations \ + Add Integration` Home Assistant UI. Provide the IP address of your matrix switch when prompted.
 
 ## Give us some Love
