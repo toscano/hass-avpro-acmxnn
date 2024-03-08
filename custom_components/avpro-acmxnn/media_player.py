@@ -101,7 +101,10 @@ class MatrixOutput(MediaPlayerEntity):
             self.update_ha()
             return
 
-        if splits and len(splits)>0 and splits[0]==f"OUT{self._index}":
+        if splits and len(splits)>0 and splits[0]==f"IN{self._sourceIndex+1}":
+            self.update_ha()
+
+        elif splits and len(splits)>0 and splits[0]==f"OUT{self._index}":
 
             # OUTx [V|A]S INy
             if len(splits)==3  and splits[1]==f"{self._output_type}S":
@@ -212,11 +215,22 @@ class MatrixOutput(MediaPlayerEntity):
         # Turn the media player on.
         await self._controller.async_send(f"SET OUT{self._index} STREAM ON")
 
+        # Reset our input signal please
+        if self._sourceIndex != -1:
+            await self._controller.async_send(f"A00 SET IN{self._sourceIndex} RST")
+
     async def async_turn_off(self):
         await self._controller.async_send(f"SET OUT{self._index} STREAM OFF")
 
     @property
     def extra_state_attributes(self):
         """Return extra state attributes."""
+        if self._isOn:
+            self._extra_attributes['input_index']=self._sourceIndex+1
+            self._extra_attributes['input_has_signal']= (self._controller._inputSignals[self._sourceIndex]==1)
+        else:
+            self._extra_attributes['input_index']=0
+            self._extra_attributes['input_has_signal']= False
+
         # Useful for making sensors
         return self._extra_attributes

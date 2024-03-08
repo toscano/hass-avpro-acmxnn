@@ -65,9 +65,11 @@ class Controller:
 
             self._inputs = []
             self._cleanInputs = []
+            self._inputSignals = []
 
             for item in portalias['inputsID']:
                 self._inputs.append(item['id'])
+                self._inputSignals.append(0) # assume no signal, we'll ask
                 if item['id'].strip() and item['id'][0] != '.':
                     self._cleanInputs.append(item['id'])
 
@@ -164,6 +166,11 @@ class Controller:
                         elif data[0:5]=="EXAMX":
                             LOGGER.info("MatrixAudio = False")
                             self._matrixAudio = False
+                        elif " SIG STA " in data: # INx SIG STA [0|1]
+                            splits = data.split(' ')
+                            index = int(splits[0][2:])
+                            value = int(splits[3])
+                            self._inputSignals[index-1]=value
 
                         for sub in self._subscribers:
                             sub(data)
@@ -206,16 +213,9 @@ class Controller:
                 await asyncio.sleep(5)
 
     async def async_get_status(self):
-        if self._ws_client is not None:
-            await self._ws_client.send_str("\r\nGET STA\r\n")
-        else:
-            self._pending_requests.append("\r\nGET STA\r\n")
-
-    async def async_poll_outputs(self):
-        if self._ws_client is not None:
-            await self._ws_client.send_str("\r\nGET OUT0\r\n")
-        else:
-            self._pending_requests.append("\r\nGET OUT0\r\n")
+        await self.async_send("GET STA")
+        for index, status in enumerate(self._inputSignals):
+            await self.async_send(f"GET IN{index+1} SIG STA")
 
     async def async_send(self, data: str):
         LOGGER.debug(f"-->{data}")
